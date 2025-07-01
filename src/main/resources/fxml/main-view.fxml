@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" 
+           fx:controller="com.kindlecapture.controller.MainController">
+   <top>
+      <MenuBar BorderPane.alignment="CENTER">
+        <menus>
+          <Menu mnemonicParsing="false" text="ファイル">
+            <items>
+              <MenuItem mnemonicParsing="false" onAction="#onSelectFolder" text="保存フォルダを選択" />
+              <SeparatorMenuItem mnemonicParsing="false" />
+              <MenuItem mnemonicParsing="false" text="終了" />
+            </items>
+          </Menu>
+          <Menu mnemonicParsing="false" text="ヘルプ">
+            <items>
+              <MenuItem mnemonicParsing="false" text="バージョン情報" />
+            </items>
+          </Menu>
+        </menus>
+      </MenuBar>
+   </top>
+   <center>
+      <SplitPane dividerPositions="0.3" orientation="HORIZONTAL" BorderPane.alignment="CENTER">
+        <items>
+          <VBox spacing="10.0">
+            <children>
+              <TitledPane collapsible="false" text="Kindle設定">
+                <content>
+                  <VBox spacing="10.0">
+                    <children>
+                      <Button fx:id="btnDetectKindle" mnemonicParsing="false" onAction="#onDetectKindle" 
+                              prefWidth="200.0" text="Kindle Desktopを検出" />
+                      <Separator prefWidth="200.0" />
+                      <HBox alignment="CENTER_LEFT" spacing="10.0">
+                        <children>
+                          <Label text="撮影間隔:" />
+                          <Slider fx:id="sliderInterval" prefWidth="100.0" />
+                          <Label fx:id="lblInterval" text="3秒" />
+                        </children>
+                      </HBox>
+                      <CheckBox fx:id="checkAutoNext" mnemonicParsing="false" text="自動ページ送り" />
+                    </children>
+                    <padding>
+                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                    </padding>
+                  </VBox>
+                </content>
+              </TitledPane>
+              
+              <TitledPane collapsible="false" text="保存設定">
+                <content>
+                  <VBox spacing="10.0">
+                    <children>
+                      <Button fx:id="btnSelectFolder" mnemonicParsing="false" onAction="#onSelectFolder" 
+                              prefWidth="200.0" text="保存フォルダを選択" />
+                      <Label fx:id="lblFolderPath" text="フォルダが選択されていません" 
+                             wrapText="true" maxWidth="180.0" />
+                    </children>
+                    <padding>
+                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                    </padding>
+                  </VBox>
+                </content>
+              </TitledPane>
+              
+              <TitledPane collapsible="false" text="撮影制御">
+                <content>
+                  <VBox spacing="10.0">
+                    <children>
+                      <Button fx:id="btnStartCapture" mnemonicParsing="false" onAction="#onStartCapture" 
+                              prefWidth="200.0" text="撮影開始" disable="true" />
+                      <Button fx:id="btnStopCapture" mnemonicParsing="false" onAction="#onStopCapture" 
+                              prefWidth="200.0" text="撮影停止" />
+                    </children>
+                    <padding>
+                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                    </padding>
+                  </VBox>
+                </content>
+              </TitledPane>
+              
+              <TitledPane collapsible="false" text="PDF作成">
+                <content>
+                  <VBox spacing="10.0">
+                    <children>
+                      <Button fx:id="btnCreatePdf" mnemonicParsing="false" onAction="#onCreatePdf" 
+                              prefWidth="200.0" text="PDFを作成" />
+                      <Button mnemonicParsing="false" onAction="#onClearImages" 
+                              prefWidth="200.0" text="リストをクリア" />
+                    </children>
+                    <padding>
+                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                    </padding>
+                  </VBox>
+                </content>
+              </TitledPane>
+            </children>
+            <padding>
+              <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+            </padding>
+          </VBox>
+          
+          <SplitPane dividerPositions="0.6" orientation="VERTICAL">
+            <items>
+              <VBox>
+                <children>
+                  <Label text="撮影画像一覧" />
+                  <ListView fx:id="listViewImages" prefHeight="200.0" />
+                </children>
+                <padding>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                </padding>
+              </VBox>
+              
+              <VBox>
+                <children>
+                  <Label text="プレビュー" />
+                  <ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="200.0">
+                    <content>
+                      <ImageView fx:id="imagePreview" fitHeight="150.0" fitWidth="200.0" 
+                                pickOnBounds="true" preserveRatio="true" />
+                    </content>
+                  </ScrollPane>
+                </children>
+                <padding>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                </padding>
+              </VBox>
+            </items>
+          </SplitPane>
+        </items>
+      </SplitPane>
+   </center>
+   <bottom>
+      <VBox BorderPane.alignment="CENTER">
+        <children>
+          <ProgressBar fx:id="progressBar" prefWidth="200.0" visible="false" />
+          <Label fx:id="lblStatus" text="準備完了" />
+        </children>
+        <padding>
+          <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+        </padding>
+      </VBox>
+   </bottom>
+</BorderPane>

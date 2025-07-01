@@ -1,0 +1,175 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'org.beryx.jlink' version '3.0.1'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.kindlecapture'
+version = '1.0-SNAPSHOT'
+
+sourceCompatibility = '17'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.openjfx:javafx-controls:20.0.1'
+    implementation 'org.openjfx:javafx-fxml:20.0.1'
+    implementation 'org.apache.pdfbox:pdfbox:3.0.0'
+    implementation 'com.github.oshi:oshi-core:6.4.8'
+    implementation 'net.java.dev.jna:jna:5.13.0'
+    implementation 'net.java.dev.jna:jna-platform:5.13.0'
+    
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+application {
+    mainClass = 'com.kindlecapture.KindleCaptureApp'
+}
+
+javafx {
+    version = '20.0.1'
+    modules = ['javafx.controls', 'javafx.fxml']
+}
+
+jlink {
+    imageZip = project.file("${buildDir}/distributions/app-${javafx.platform.classifier}.zip")
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    launcher {
+        name = 'KindleCapture'
+        jvmArgs = ['--add-opens', 'java.desktop/java.awt=ALL-UNNAMED',
+                   '--add-opens', 'java.desktop/sun.awt.windows=ALL-UNNAMED']
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    manifest {
+        attributes(
+            'Main-Class': 'com.kindlecapture.KindleCaptureApp'
+        )
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+shadowJar {
+    manifest {
+        attributes(
+            'Main-Class': 'com.kindlecapture.KindleCaptureApp'
+        )
+    }
+    archiveClassifier = ''
+    mergeServiceFiles()
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+}
+
+// Windows用のネイティブイメージ作成タスク
+task createWindowsExe(type: Exec) {
+    dependsOn shadowJar
+    group = 'distribution'
+    description = 'Creates Windows executable using jpackage'
+    
+    doFirst {
+        // 既存のアプリケーションディレクトリを削除
+        delete file('build/distributions/KindleCapture')
+        
+        // 出力ディレクトリを確保
+        file('build/distributions').mkdirs()
+        file('build/jpackage-input').mkdirs()
+        
+        // ShadowJARファイルをjpackage用の入力ディレクトリにコピー
+        copy {
+            from "build/libs/${project.name}-${version}.jar"
+            into 'build/jpackage-input'
+        }
+    }
+    
+    commandLine 'jpackage',
+        '--type', 'app-image',
+        '--input', 'build/jpackage-input',
+        '--dest', 'build/distributions',
+        '--main-jar', "${project.name}-${version}.jar",
+        '--main-class', 'com.kindlecapture.KindleCaptureApp',
+        '--name', 'KindleCapture',
+        '--app-version', '1.0',
+        '--vendor', 'KindleCapture Team',
+        '--description', 'Kindle Desktop Screenshot and PDF Creator',
+        '--java-options', '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
+        '--java-options', '--add-opens=java.desktop/sun.awt.windows=ALL-UNNAMED',
+        '--runtime-image', System.getProperty('java.home')
+}
+
+// Windows用インストーラー作成タスク（改良版）
+task createWindowsInstaller(type: Exec) {
+    dependsOn shadowJar
+    group = 'distribution'
+    description = 'Creates Windows MSI installer using jpackage'
+    
+    doFirst {
+        // 既存のファイルを削除（MSIファイルとapp-imageも削除）
+        delete fileTree('build/distributions') { include '*.msi' }
+        delete file('build/distributions/KindleCapture')
+        
+        // 出力ディレクトリを確保
+        file('build/distributions').mkdirs()
+        file('build/jpackage-input').mkdirs()
+        
+        // ShadowJARファイルをjpackage用の入力ディレクトリにコピー
+        copy {
+            from "build/libs/${project.name}-${version}.jar"
+            into 'build/jpackage-input'
+        }
+        
+        println "Creating MSI installer for Windows..."
+        println "Java Home: ${System.getProperty('java.home')}"
+        println "OS: ${System.getProperty('os.name')}"
+    }
+    
+    def jpackageArgs = [
+        'jpackage',
+        '--type', 'msi',
+        '--input', 'build/jpackage-input',
+        '--dest', 'build/distributions',
+        '--main-jar', "${project.name}-${version}.jar",
+        '--main-class', 'com.kindlecapture.KindleCaptureApp',
+        '--name', 'KindleCapture',
+        '--app-version', '1.0.0',
+        '--vendor', 'KindleCapture Team',
+        '--description', 'Kindle Desktop Screenshot and PDF Creator Tool',
+        '--copyright', 'Copyright 2025 KindleCapture Team',
+        '--java-options', '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
+        '--java-options', '--add-opens=java.desktop/sun.awt.windows=ALL-UNNAMED',
+        '--runtime-image', System.getProperty('java.home')
+    ]
+    
+    // Windows環境でのみWindows専用オプションを追加
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        jpackageArgs.addAll([
+            '--win-menu',
+            '--win-shortcut',
+            '--win-dir-chooser',
+            '--win-upgrade-uuid', 'f0b5d3e4-1234-5678-9abc-def012345678'
+        ])
+    }
+    
+    commandLine jpackageArgs
+    
+    doLast {
+        println "MSI installer created successfully!"
+        fileTree('build/distributions') { include '*.msi' }.each { file ->
+            println "Created: ${file.absolutePath} (${file.length()} bytes)"
+        }
+    }
+}

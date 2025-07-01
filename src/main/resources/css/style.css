@@ -1,0 +1,225 @@
+/* Kindle Capture Application Styles */
+
+.root {
+    -fx-font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+    -fx-font-size: 14px;
+    -fx-background-color: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+}
+
+/* ボタンスタイル */
+.button {
+    -fx-background-color: linear-gradient(to bottom, #007bff, #0056b3);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-padding: 8 16 8 16;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 2, 0, 0, 1);
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(to bottom, #0056b3, #004085);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 3, 0, 0, 2);
+}
+
+.button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #004085, #002752);
+    -fx-effect: innershadow(three-pass-box, rgba(0,0,0,0.3), 2, 0, 0, 1);
+}
+
+.button:disabled {
+    -fx-background-color: #6c757d;
+    -fx-text-fill: #adb5bd;
+    -fx-effect: none;
+    -fx-cursor: default;
+}
+
+/* 特別なボタンスタイル */
+.button.start-button {
+    -fx-background-color: linear-gradient(to bottom, #28a745, #1e7e34);
+}
+
+.button.start-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #1e7e34, #155724);
+}
+
+.button.stop-button {
+    -fx-background-color: linear-gradient(to bottom, #dc3545, #c82333);
+}
+
+.button.stop-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #c82333, #a71e2a);
+}
+
+/* タイトルパネル */
+.titled-pane {
+    -fx-background-color: white;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 2, 0, 0, 1);
+}
+
+.titled-pane > .title {
+    -fx-background-color: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+    -fx-text-fill: #495057;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-background-radius: 8px 8px 0 0;
+}
+
+.titled-pane > *.content {
+    -fx-background-color: white;
+    -fx-background-radius: 0 0 8px 8px;
+}
+
+/* リストビュー */
+.list-view {
+    -fx-background-color: white;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #495057;
+    -fx-font-size: 12px;
+}
+
+.list-cell:selected {
+    -fx-background-color: linear-gradient(to bottom, #007bff, #0056b3);
+    -fx-text-fill: white;
+}
+
+.list-cell:hover {
+    -fx-background-color: #f8f9fa;
+}
+
+/* プログレスバー */
+.progress-bar {
+    -fx-background-color: #e9ecef;
+    -fx-background-radius: 10px;
+}
+
+.progress-bar > .bar {
+    -fx-background-color: linear-gradient(to right, #007bff, #0056b3);
+    -fx-background-radius: 10px;
+    -fx-background-insets: 1px;
+}
+
+/* ラベル */
+.label {
+    -fx-text-fill: #495057;
+}
+
+.status-label {
+    -fx-text-fill: #6c757d;
+    -fx-font-style: italic;
+}
+
+.folder-path-label {
+    -fx-text-fill: #007bff;
+    -fx-font-size: 11px;
+}
+
+/* スライダー */
+.slider {
+    -fx-background-color: transparent;
+}
+
+.slider > .track {
+    -fx-background-color: #dee2e6;
+    -fx-background-radius: 10px;
+}
+
+.slider > .thumb {
+    -fx-background-color: linear-gradient(to bottom, #007bff, #0056b3);
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 2, 0, 0, 1);
+}
+
+/* チェックボックス */
+.check-box {
+    -fx-text-fill: #495057;
+}
+
+.check-box > .box {
+    -fx-background-color: white;
+    -fx-border-color: #ced4da;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
+.check-box:selected > .box {
+    -fx-background-color: #007bff;
+    -fx-border-color: #007bff;
+}
+
+.check-box:selected > .box > .mark {
+    -fx-background-color: white;
+}
+
+/* メニューバー */
+.menu-bar {
+    -fx-background-color: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.menu {
+    -fx-text-fill: #495057;
+}
+
+.menu:hover {
+    -fx-background-color: #e9ecef;
+}
+
+.menu-item {
+    -fx-text-fill: #495057;
+}
+
+.menu-item:hover {
+    -fx-background-color: #f8f9fa;
+}
+
+/* スクロールパネル */
+.scroll-pane {
+    -fx-background-color: white;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: white;
+}
+
+/* 分割パネル */
+.split-pane {
+    -fx-background-color: transparent;
+}
+
+.split-pane-divider {
+    -fx-background-color: #dee2e6;
+    -fx-padding: 0 1 0 1;
+}
+
+/* イメージビュー */
+.image-view {
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 2, 0, 0, 1);
+}
+
+/* アニメーション効果 */
+.button {
+    -fx-transition: all 0.2s ease;
+}
+
+.list-cell {
+    -fx-transition: background-color 0.15s ease;
+}

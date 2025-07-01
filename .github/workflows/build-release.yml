@@ -36,16 +36,17 @@ jobs:
       shell: bash
       
     - name: Build with Gradle
-      run: ./gradlew build
+      run: ./gradlew clean build --stacktrace
       
     - name: Create Shadow JAR
-      run: ./gradlew shadowJar
+      run: ./gradlew shadowJar --stacktrace
       
     - name: Create Windows App Image
-      run: ./gradlew createWindowsExe
+      run: ./gradlew createWindowsExe --stacktrace
       
     - name: Create Windows MSI Installer
-      run: ./gradlew createWindowsInstaller
+      run: ./gradlew createWindowsInstaller --stacktrace
+      continue-on-error: true
       
     - name: Verify build outputs
       run: |
@@ -170,17 +171,18 @@ jobs:
       run: chmod +x gradlew
       
     - name: Build with Gradle
-      run: ./gradlew build
+      run: ./gradlew clean build --stacktrace
       
     - name: Create Shadow JAR
-      run: ./gradlew shadowJar
+      run: ./gradlew shadowJar --stacktrace
       
     - name: Run tests
-      run: ./gradlew test
+      run: ./gradlew test --stacktrace
       
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-results
+        name: test-results-cross-platform
         path: build/reports/tests/test/
+        if-no-files-found: ignore

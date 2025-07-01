@@ -40,7 +40,7 @@ echo "バージョンを ${VERSION} に更新しました"
 
 # ローカルビルドテスト
 echo "[3/6] ローカルビルドテスト..."
-./gradlew clean build shadowJar
+./gradlew clean build
 echo "ビルドテスト完了"
 
 # 変更をコミット

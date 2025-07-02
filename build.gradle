@@ -105,15 +105,7 @@ task createWindowsExe(type: Exec) {
         '--name', 'KindleCapture',
         '--app-version', '1.0',
         '--vendor', 'KindleCapture Team',
-        '--description', 'Kindle Desktop Screenshot and PDF Creator',
-        '--java-options', '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
-        '--java-options', '--add-opens=java.desktop/sun.awt.windows=ALL-UNNAMED',
-        '--java-options', '--add-modules=javafx.controls,javafx.fxml,javafx.base,javafx.graphics',
-        '--java-options', '--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED',
-        '--java-options', '-Djava.awt.headless=false',
-        '--java-options', '-Dprism.order=sw',
-        '--add-modules', 'javafx.controls,javafx.fxml,javafx.base,javafx.graphics',
-        '--runtime-image', System.getProperty('java.home')
+        '--description', 'Kindle Desktop Screenshot and PDF Creator'
 }
 
 // Windows用インストーラー作成タスク（改良版：ファイルロック対応）
@@ -233,15 +225,7 @@ task createWindowsInstaller(type: Exec) {
         '--app-version', '1.0.0',
         '--vendor', 'KindleCapture Team',
         '--description', 'Kindle Desktop Screenshot and PDF Creator Tool',
-        '--copyright', 'Copyright 2025 KindleCapture Team',
-        '--java-options', '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
-        '--java-options', '--add-opens=java.desktop/sun.awt.windows=ALL-UNNAMED',
-        '--java-options', '--add-modules=javafx.controls,javafx.fxml,javafx.base,javafx.graphics',
-        '--java-options', '--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED',
-        '--java-options', '-Djava.awt.headless=false',
-        '--java-options', '-Dprism.order=sw',
-        '--add-modules', 'javafx.controls,javafx.fxml,javafx.base,javafx.graphics',
-        '--runtime-image', System.getProperty('java.home')
+        '--copyright', 'Copyright 2025 KindleCapture Team'
     ]
     
     // Windows環境でのみWindows専用オプションを追加

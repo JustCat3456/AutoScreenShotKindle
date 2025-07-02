@@ -31,13 +31,9 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Launch the application with proper JavaFX settings
+REM Launch the application - simplified approach since JavaFX is embedded in JAR
 echo Launching application...
-java --add-modules=javafx.controls,javafx.fxml ^
-     --add-opens=java.desktop/java.awt=ALL-UNNAMED ^
-     --add-opens=java.desktop/sun.awt.windows=ALL-UNNAMED ^
-     --add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED ^
-     -jar "!JAR_FILE!"
+java -jar "!JAR_FILE!"
 
 if errorlevel 1 (
     echo.
@@ -47,8 +43,11 @@ if errorlevel 1 (
     echo Java version:
     java -version
     echo.
-    echo Available JavaFX modules:
-    java --list-modules | findstr javafx
+    echo JAR file info:
+    dir "!JAR_FILE!"
+    echo.
+    echo Trying with additional JavaFX settings...
+    java -Dprism.order=sw -Djava.awt.headless=false -jar "!JAR_FILE!"
     echo.
     pause
 )

@@ -72,6 +72,28 @@ task createWindowsExe(type: Exec) {
             from "build/libs/${project.name}-${version}.jar"
             into 'build/jpackage-input'
         }
+        
+        // JavaFXの存在確認とデバッグ情報
+        println "=== JavaFX Runtime Check ==="
+        def javaHome = System.getProperty('java.home')
+        println "Java Home: ${javaHome}"
+        
+        // jmodsディレクトリの確認
+        def jmodsDir = file("${javaHome}/jmods")
+        if (jmodsDir.exists()) {
+            println "jmods directory found: ${jmodsDir.absolutePath}"
+            def javaFXModules = jmodsDir.listFiles().findAll { it.name.contains('javafx') }
+            if (javaFXModules.size() > 0) {
+                println "JavaFX modules found:"
+                javaFXModules.each { println "  - ${it.name}" }
+            } else {
+                println "⚠ WARNING: No JavaFX modules found in jmods directory"
+            }
+        } else {
+            println "jmods directory not found - this may be a JRE rather than JDK"
+        }
+        
+        println "========================="
     }
     
     commandLine 'jpackage',
@@ -86,6 +108,11 @@ task createWindowsExe(type: Exec) {
         '--description', 'Kindle Desktop Screenshot and PDF Creator',
         '--java-options', '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
         '--java-options', '--add-opens=java.desktop/sun.awt.windows=ALL-UNNAMED',
+        '--java-options', '--add-modules=javafx.controls,javafx.fxml,javafx.base,javafx.graphics',
+        '--java-options', '--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED',
+        '--java-options', '-Djava.awt.headless=false',
+        '--java-options', '-Dprism.order=sw',
+        '--add-modules', 'javafx.controls,javafx.fxml,javafx.base,javafx.graphics',
         '--runtime-image', System.getProperty('java.home')
 }
 
@@ -174,6 +201,25 @@ task createWindowsInstaller(type: Exec) {
         println "Creating MSI installer for Windows..."
         println "Java Home: ${System.getProperty('java.home')}"
         println "OS: ${System.getProperty('os.name')}"
+        
+        // JavaFXモジュールの存在確認
+        try {
+            def javaExecutable = "${System.getProperty('java.home')}/bin/java"
+            def moduleCheckCmd = ["${javaExecutable}", "--list-modules"]
+            def process = moduleCheckCmd.execute()
+            process.waitFor()
+            def output = process.text
+            
+            if (output.contains('javafx.controls') && output.contains('javafx.fxml')) {
+                println "✓ JavaFX modules found in runtime"
+            } else {
+                println "⚠ WARNING: JavaFX modules not found in runtime. Application may not start."
+                println "Available modules:"
+                output.split('\n').findAll { it.contains('javafx') }.each { println "  ${it}" }
+            }
+        } catch (Exception e) {
+            println "Could not check JavaFX modules: $e.message"
+        }
     }
     
     def jpackageArgs = [
@@ -190,6 +236,11 @@ task createWindowsInstaller(type: Exec) {
         '--copyright', 'Copyright 2025 KindleCapture Team',
         '--java-options', '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
         '--java-options', '--add-opens=java.desktop/sun.awt.windows=ALL-UNNAMED',
+        '--java-options', '--add-modules=javafx.controls,javafx.fxml,javafx.base,javafx.graphics',
+        '--java-options', '--add-exports=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED',
+        '--java-options', '-Djava.awt.headless=false',
+        '--java-options', '-Dprism.order=sw',
+        '--add-modules', 'javafx.controls,javafx.fxml,javafx.base,javafx.graphics',
         '--runtime-image', System.getProperty('java.home')
     ]
     

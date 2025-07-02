@@ -44,8 +44,38 @@ jobs:
       shell: cmd
       
     - name: Create Windows App Image
-      run: .\gradlew.bat createWindowsExe --stacktrace
-      shell: cmd
+      run: |
+        echo "Creating Windows App Image with JavaFX support..."
+        .\gradlew.bat createWindowsExe --stacktrace --info
+        
+        echo "Checking created app-image structure..."
+        if (Test-Path "build/distributions/KindleCapture") {
+          echo "App-image created successfully"
+          echo "Contents:"
+          Get-ChildItem "build/distributions/KindleCapture" -Recurse | ForEach-Object {
+            $relativePath = $_.FullName.Substring((Get-Location).Path.Length + 1)
+            if ($_.PSIsContainer) {
+              echo "  [DIR]  $relativePath"
+            } else {
+              echo "  [FILE] $relativePath ($($_.Length) bytes)"
+            }
+          }
+          
+          # Runtime modules check
+          if (Test-Path "build/distributions/KindleCapture/runtime") {
+            echo "Runtime directory found"
+            $runtimeModules = Get-ChildItem "build/distributions/KindleCapture/runtime" -Recurse -Filter "*javafx*"
+            if ($runtimeModules) {
+              echo "JavaFX modules in runtime:"
+              $runtimeModules | ForEach-Object { echo "  $($_.Name)" }
+            } else {
+              echo "WARNING: No JavaFX modules found in runtime"
+            }
+          }
+        } else {
+          echo "ERROR: App-image was not created"
+        }
+      shell: powershell
       
     - name: Prepare for MSI creation
       run: |
@@ -90,8 +120,30 @@ jobs:
       shell: powershell
       
     - name: Create Windows MSI Installer
-      run: .\gradlew.bat createWindowsInstaller --stacktrace
-      shell: cmd
+      run: |
+        echo "Creating MSI installer with enhanced JavaFX support..."
+        .\gradlew.bat createWindowsInstaller --stacktrace --info
+        
+        echo "Verifying MSI creation..."
+        $msiFiles = Get-ChildItem "build/distributions/*.msi" -ErrorAction SilentlyContinue
+        if ($msiFiles) {
+          $msiFiles | ForEach-Object {
+            echo "Created MSI: $($_.Name) ($($_.Length) bytes)"
+          }
+        } else {
+          echo "WARNING: No MSI files were created"
+          echo "This might be due to jpackage issues or missing dependencies"
+          
+          # Show jpackage logs if available
+          if (Test-Path "build/distributions") {
+            echo "Contents of distributions directory:"
+            Get-ChildItem "build/distributions" -Recurse | ForEach-Object {
+              $type = if ($_.PSIsContainer) { "DIR" } else { "FILE" }
+              echo "  [$type] $($_.Name)"
+            }
+          }
+        }
+      shell: powershell
       continue-on-error: true
       
     - name: Verify build outputs

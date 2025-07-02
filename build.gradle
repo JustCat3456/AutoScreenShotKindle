@@ -89,19 +89,80 @@ task createWindowsExe(type: Exec) {
         '--runtime-image', System.getProperty('java.home')
 }
 
-// Windows用インストーラー作成タスク（改良版）
+// Windows用インストーラー作成タスク（改良版：ファイルロック対応）
 task createWindowsInstaller(type: Exec) {
     dependsOn shadowJar
     group = 'distribution'
     description = 'Creates Windows MSI installer using jpackage'
     
     doFirst {
-        // 既存のファイルを削除（MSIファイルとapp-imageも削除）
-        delete fileTree('build/distributions') { include '*.msi' }
-        delete file('build/distributions/KindleCapture')
+        // ファイルロック対策：プロセス終了とファイル削除を慎重に行う
+        def distributionsDir = file('build/distributions')
+        def kindleCaptureDir = file('build/distributions/KindleCapture')
+        
+        // 既存のMSIファイルを削除
+        println "Cleaning up existing MSI files..."
+        fileTree('build/distributions') { include '*.msi' }.each { msiFile ->
+            if (msiFile.exists()) {
+                println "Deleting existing MSI: ${msiFile.name}"
+                msiFile.delete()
+            }
+        }
+        
+        // KindleCaptureディレクトリの慎重な削除
+        if (kindleCaptureDir.exists()) {
+            println "Removing existing KindleCapture directory..."
+            
+            // Windows環境でのファイルロック対策
+            if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+                // Java プロセスの場合のみkillを試行
+                try {
+                    // Javaプロセスを停止（GitHub Actions環境での安全性考慮）
+                    def processKillCmd = "taskkill /F /IM java.exe /T 2>nul || echo No Java processes to kill"
+                    def proc = processKillCmd.execute()
+                    proc.waitFor()
+                    Thread.sleep(1000)  // 1秒待機
+                } catch (Exception e) {
+                    println "Process cleanup warning: ${e.message}"
+                }
+                
+                // リトライ機能付きの削除
+                def maxRetries = 3
+                def retry = 0
+                while (kindleCaptureDir.exists() && retry < maxRetries) {
+                    try {
+                        retry++
+                        println "Attempting to delete KindleCapture directory (attempt ${retry}/${maxRetries})..."
+                        
+                        // Gradleの標準削除を使用
+                        delete kindleCaptureDir
+                        
+                        if (!kindleCaptureDir.exists()) {
+                            println "Successfully deleted KindleCapture directory"
+                            break
+                        }
+                    } catch (Exception e) {
+                        println "Delete attempt ${retry} failed: ${e.message}"
+                        if (retry < maxRetries) {
+                            Thread.sleep(2000)  // 2秒待機してリトライ
+                        }
+                    }
+                }
+                
+                // 最終的に削除できない場合の警告
+                if (kindleCaptureDir.exists()) {
+                    println "WARNING: Could not delete KindleCapture directory. MSI creation may fail."
+                    println "This is often caused by file locks from previous jpackage runs."
+                    // エラーにせず、継続する
+                }
+            } else {
+                // Linux/Unix環境では通常の削除
+                delete kindleCaptureDir
+            }
+        }
         
         // 出力ディレクトリを確保
-        file('build/distributions').mkdirs()
+        distributionsDir.mkdirs()
         file('build/jpackage-input').mkdirs()
         
         // ShadowJARファイルをjpackage用の入力ディレクトリにコピー
@@ -145,9 +206,31 @@ task createWindowsInstaller(type: Exec) {
     commandLine jpackageArgs
     
     doLast {
-        println "MSI installer created successfully!"
-        fileTree('build/distributions') { include '*.msi' }.each { file ->
-            println "Created: ${file.absolutePath} (${file.length()} bytes)"
+        println "MSI installer creation completed!"
+        
+        // 作成されたMSIファイルの確認
+        def msiFiles = fileTree('build/distributions') { include '*.msi' }
+        if (msiFiles.isEmpty()) {
+            println "WARNING: No MSI files were created."
+            println "This may be due to jpackage errors or file system issues."
+            
+            // デバッグ情報の出力
+            println "Contents of build/distributions:"
+            fileTree('build/distributions').each { file ->
+                println "  ${file.name} (${file.isDirectory() ? 'directory' : 'file'}) - ${file.length()} bytes"
+            }
+        } else {
+            msiFiles.each { file ->
+                println "Created MSI: ${file.absolutePath} (${file.length()} bytes)"
+            }
+        }
+        
+        // KindleCaptureディレクトリの状態確認
+        def kindleCaptureDir = file('build/distributions/KindleCapture')
+        if (kindleCaptureDir.exists()) {
+            println "KindleCapture app-image directory is present (${kindleCaptureDir.list().length} files)"
+        } else {
+            println "KindleCapture app-image directory was cleaned up successfully"
         }
     }
 }

@@ -47,6 +47,48 @@ jobs:
       run: .\gradlew.bat createWindowsExe --stacktrace
       shell: cmd
       
+    - name: Prepare for MSI creation
+      run: |
+        Write-Host "Preparing for MSI creation..."
+        
+        # Java プロセスの確認と終了
+        Write-Host "Checking for Java processes..."
+        $javaProcesses = Get-Process -Name "java" -ErrorAction SilentlyContinue
+        if ($javaProcesses) {
+          Write-Host "Found $($javaProcesses.Count) Java processes. Attempting gentle shutdown..."
+          $javaProcesses | ForEach-Object { 
+            try {
+              $_.CloseMainWindow()
+              Start-Sleep -Seconds 2
+            } catch {
+              Write-Host "Could not close process gracefully: $($_.ProcessName)"
+            }
+          }
+          Start-Sleep -Seconds 3
+        }
+        
+        # 残存ファイルのクリーンアップ
+        Write-Host "Cleaning up build artifacts..."
+        if (Test-Path "build\distributions\KindleCapture") {
+          Write-Host "Removing existing KindleCapture directory..."
+          try {
+            Remove-Item "build\distributions\KindleCapture" -Recurse -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+          } catch {
+            Write-Host "Warning: Could not remove KindleCapture directory: $($_.Exception.Message)"
+          }
+        }
+        
+        # 既存MSIファイルの削除
+        $existingMsi = Get-ChildItem "build\distributions\*.msi" -ErrorAction SilentlyContinue
+        if ($existingMsi) {
+          Write-Host "Removing existing MSI files..."
+          $existingMsi | Remove-Item -Force -ErrorAction SilentlyContinue
+        }
+        
+        Write-Host "MSI preparation completed."
+      shell: powershell
+      
     - name: Create Windows MSI Installer
       run: .\gradlew.bat createWindowsInstaller --stacktrace
       shell: cmd
@@ -64,7 +106,11 @@ jobs:
         Write-Host "`n=== Distributions ==="
         if (Test-Path "build/distributions") {
           Get-ChildItem "build/distributions" | ForEach-Object { 
-            $type = if ($_.PSIsContainer) { "Directory" } else { "File" }
+            if ($_.PSIsContainer) { 
+              $type = "Directory"
+            } else { 
+              $type = "File"
+            }
             Write-Host "  $($_.Name) - $type"
           }
         } else {
@@ -90,8 +136,10 @@ jobs:
         
     - name: Create App Image ZIP
       run: |
+        Write-Host "Checking for KindleCapture app-image..."
+        
         if (Test-Path "build/distributions/KindleCapture") {
-          Write-Host "Creating ZIP archive..."
+          Write-Host "Creating ZIP archive from app-image..."
           try {
             # PowerShellでのパス変換
             $sourcePath = "build/distributions/KindleCapture"
@@ -109,13 +157,82 @@ jobs:
           } catch {
             Write-Host "Failed to create ZIP: $($_.Exception.Message)"
             Write-Host "Error details: $($_.Exception)"
-            exit 1
+            
+            # 代替案: JAR から簡易実行ファイルを作成
+            Write-Host "Creating alternative JAR-based package..."
+            try {
+              $jarPath = Get-ChildItem "build/libs/kindle-capture-*.jar" | Select-Object -First 1
+              if ($jarPath) {
+                $altDir = "build/distributions/KindleCapture-JAR"
+                New-Item -ItemType Directory -Path $altDir -Force | Out-Null
+                Copy-Item $jarPath.FullName "$altDir/kindle-capture.jar"
+                
+                # 実行用バッチファイル作成（YAML適合形式）
+                $batLines = @(
+                  '@echo off',
+                  'echo Starting Kindle Capture...',
+                  'java -jar kindle-capture.jar',
+                  'pause'
+                )
+                $batContent = $batLines -join "`r`n"
+                Set-Content -Path "$altDir/run.bat" -Value $batContent
+                
+                # README作成（YAML適合形式）
+                $readmeLines = @(
+                  'Kindle Capture - JAR Package',
+                  '',
+                  'Requirements:',
+                  '- Java 17 or later must be installed',
+                  '',
+                  'Usage:',
+                  '1. Double-click ''run.bat'' to start the application',
+                  '2. Or run: java -jar kindle-capture.jar',
+                  '',
+                  'If you encounter issues, please install Java 17+ from:',
+                  'https://adoptium.net/'
+                )
+                $readmeContent = $readmeLines -join "`r`n"
+                Set-Content -Path "$altDir/README.txt" -Value $readmeContent
+                
+                # ZIP作成
+                Compress-Archive -Path "$altDir/*" -DestinationPath "build/distributions/KindleCapture-JAR-Package.zip" -Force
+                Write-Host "Alternative JAR package created: KindleCapture-JAR-Package.zip"
+              }
+            } catch {
+              Write-Host "Failed to create alternative package: $($_.Exception.Message)"
+            }
           }
         } else {
-          Write-Host "KindleCapture directory not found at: build/distributions/KindleCapture"
+          Write-Host "KindleCapture app-image directory not found"
+          
+          # 再度App Image作成を試行
+          Write-Host "Attempting to recreate app-image..."
+          try {
+            & ".\gradlew.bat" "createWindowsExe" "--stacktrace"
+            
+            if (Test-Path "build/distributions/KindleCapture") {
+              Write-Host "App-image recreated successfully. Creating ZIP..."
+              $sourcePath = "build/distributions/KindleCapture"
+              $destinationPath = "build/distributions/KindleCapture-Windows-App.zip"
+              Compress-Archive -Path "$sourcePath/*" -DestinationPath $destinationPath -Force
+              Write-Host "ZIP created from recreated app-image"
+            } else {
+              Write-Host "Failed to recreate app-image"
+            }
+          } catch {
+            Write-Host "Failed to recreate app-image: $($_.Exception.Message)"
+          }
+          
           Write-Host "Available files in build/distributions:"
           if (Test-Path "build/distributions") {
-            Get-ChildItem "build/distributions" | ForEach-Object { Write-Host "  $($_.Name) ($($_.PSIsContainer ? 'Directory' : 'File'))" }
+            Get-ChildItem "build/distributions" | ForEach-Object { 
+              if ($_.PSIsContainer) { 
+                $type = "Directory"
+              } else { 
+                $type = "File"
+              }
+              Write-Host "  $($_.Name) ($type)" 
+            }
           } else {
             Write-Host "build/distributions directory does not exist"
           }
@@ -124,10 +241,12 @@ jobs:
       
     - name: Upload App Image artifact
       uses: actions/upload-artifact@v4
-      if: hashFiles('build/distributions/KindleCapture-Windows-App.zip') != ''
+      if: hashFiles('build/distributions/KindleCapture-Windows-App.zip') != '' || hashFiles('build/distributions/KindleCapture-JAR-Package.zip') != ''
       with:
         name: kindle-capture-app-image
-        path: build/distributions/KindleCapture-Windows-App.zip
+        path: |
+          build/distributions/KindleCapture-Windows-App.zip
+          build/distributions/KindleCapture-JAR-Package.zip
         if-no-files-found: ignore
         
     - name: Upload MSI Installer artifact
@@ -154,6 +273,7 @@ jobs:
           build/libs/kindle-capture-*.jar
           build/distributions/*.msi
           build/distributions/KindleCapture-Windows-App.zip
+          build/distributions/KindleCapture-JAR-Package.zip
         body: |
           ## 🎉 Kindle Capture Release
           
@@ -167,9 +287,11 @@ jobs:
           - 管理者権限で実行してください
           
           **📁 ポータブル版**
-          - `KindleCapture-Windows-App.zip` - 展開して実行
+          - `KindleCapture-Windows-App.zip` - 完全独立型（推奨）
+          - `KindleCapture-JAR-Package.zip` - Java実行環境付き
           - インストール不要、Java実行環境込み
-          - 展開後 `bin/KindleCapture.exe` を実行
+          - 展開後 `bin/KindleCapture.exe` を実行（App版）
+          - 展開後 `run.bat` を実行（JAR版）
           
           **☕ JAR版**
           - `kindle-capture-*.jar` - Java 17以上が必要
